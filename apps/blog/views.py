@@ -3,16 +3,22 @@ from rest_framework.generics import GenericAPIView, get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from apps.blog.models import Category, Blog
-from apps.blog.serializers import CategorySerializer, BlogSerializer
-from apps.common.permissions import ReadOnly
+from apps.blog.models import Category, Blog, Comment
+from apps.blog.serializers import CategorySerializer, BlogSerializer, CommentSerializer
+from apps.common.permissions import ReadOnly, All
+from drf_util.decorators import serialize_decorator
 
 
 # Create your views here.
 class CategoryViewSet(viewsets.ModelViewSet):
     serializer_class = CategorySerializer
+    permission_classes = (All,)
     queryset = Category.objects.all()
 
+class CommentViewSet(viewsets.ModelViewSet):
+    serializer_class = CommentSerializer
+    permission_classes = (All,)
+    queryset = Comment.objects.all()
 
 class BlogListView(GenericAPIView):
     serializer_class = BlogSerializer
@@ -25,8 +31,35 @@ class BlogListView(GenericAPIView):
 
 class BlogItemView(GenericAPIView):
     serializer_class = BlogSerializer
-    permission_classes = (ReadOnly, IsAuthenticated)
+    permission_classes = (All,)
 
     def get(self, request, pk):
         blog = get_object_or_404(Blog.objects.filter(pk=pk))
+        comments = Comment.objects.filter(blog=blog)
+
+        response_data = BlogSerializer(blog).data
+
+        response_data["comments"] = list()
+        for comment in comments:
+            response_data["comments"].append(CommentSerializer(comment).data)
+
+        return Response(response_data)
+
+
+    @serialize_decorator(BlogSerializer)
+    def post(self, request, pk):
+        validated_data = request.serializer.validated_data
+
+        title = validated_data.pop("title")
+        slug = validated_data.pop("slug")
+        body = validated_data.pop("body")
+        category = validated_data.pop("category")
+        enabled = validated_data.pop("enabled")
+
+        blog = Blog.objects.create(
+            category=category, title=title, slug=slug, body=body, enabled=enabled
+        )
+
+        blog.save()
+
         return Response(BlogSerializer(blog).data)
