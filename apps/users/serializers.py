@@ -1,11 +1,23 @@
-from rest_framework import serializers
-
 from django.contrib.auth import get_user_model
+from rest_framework import serializers
 
 User = get_user_model()
 
 
-class UserSerializer(serializers.ModelSerializer):
+class ListUsersSerializer(serializers.ModelSerializer):
+    full_name = serializers.SerializerMethodField("get_full_name")
+
+    class Meta:
+        model = User
+        exclude = ("password",)
+
+    @staticmethod
+    def get_full_name(obj):
+        return f"{obj.first_name} {obj.last_name}"
+
+
+class RegisterUsersSerializer(serializers.ModelSerializer):
+    token = serializers.SerializerMethodField("get_auth_token")
     password = serializers.CharField(write_only=True)
 
     class Meta:
@@ -15,4 +27,5 @@ class UserSerializer(serializers.ModelSerializer):
             "last_name",
             "email",
             "password",
+            "token",
         )
