@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from apps.tasks.models import Task
+from apps.tasks.models import Task, Comment
 
 
 class TaskSerializer(serializers.ModelSerializer):
@@ -8,7 +8,8 @@ class TaskSerializer(serializers.ModelSerializer):
         model = Task
         fields = "__all__"
         extra_kwargs = {
-            "user": {"read_only": True}
+            "user": {"read_only": True},
+            "assigned_to": {"read_only": True}
         }
 
 
@@ -20,7 +21,25 @@ class DisplayTaskSerializer(serializers.ModelSerializer):
 
 class TaskAssignSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField()
+    assigned_to = serializers.IntegerField()
 
     class Meta:
         model = Task
-        fields = ["id", "user"]
+        fields = ('id', 'assigned_to')
+
+
+class TaskCommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Comment
+        fields = [
+            'id',
+            'task',
+            'text',
+        ]
+
+
+class CommentCompletedSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Comment
+        fields = ['task']

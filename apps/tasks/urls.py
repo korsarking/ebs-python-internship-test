@@ -1,8 +1,8 @@
 from rest_framework.routers import DefaultRouter
-from apps.tasks.views import TaskViewSet
+from apps.tasks.views import TaskViewSet, CommentViewSet
 
 
-router = DefaultRouter()
-router.register("", TaskViewSet)
-
+router = DefaultRouter(trailing_slash=False)
+router.register('tasks', TaskViewSet)
+router.register(r'comments', CommentViewSet, basename='comments')
 urlpatterns = router.urls
