@@ -10,6 +10,13 @@ class HealthView(GenericAPIView):
     authentication_classes = ()
     permission_classes = (AllowAny,)
 
+    def get_queryset(self):
+
+        if getattr(self, "swagger_fake_view", False):
+            return
+
+        return super().get_queryset()
+
     def get(self, request):
         return Response(
             {
@@ -19,6 +26,14 @@ class HealthView(GenericAPIView):
 
 
 class ProtectedTestView(GenericAPIView):
+
+    def get_queryset(self):
+
+        if getattr(self, "swagger_fake_view", False):
+            return
+
+        return super().get_queryset()
+
     def get(self, request):
         return Response(
             {

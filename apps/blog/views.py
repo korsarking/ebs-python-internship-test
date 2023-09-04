@@ -23,9 +23,10 @@ class CommentViewSet(viewsets.ModelViewSet):
 class BlogListView(GenericAPIView):
     serializer_class = BlogSerializer
     permission_classes = (ReadOnly,)
+    queryset = Blog.objects.all()
 
     def get(self, request):
-        blogs = Blog.objects.all()
+        blogs = self.get_queryset()
         return Response(BlogSerializer(blogs, many=True).data)
 
 
