@@ -1,6 +1,5 @@
 import http
 
-# from django_filters.rest_framework import DjangoFilterBackend
 from django.conf import settings
 
 from rest_framework import filters
@@ -18,8 +17,6 @@ class TaskViewSet(ModelViewSet):
     serializer_class = TaskSerializer
     queryset = Task.objects.all()
     permission_classes = (IsAuthenticated,)
-    # filter_backends = [DjangoFilterBackend]
-    # filterset_fields = ['id', 'status']
     filter_backends = [filters.SearchFilter]
     search_fields = ['$title']
 
@@ -56,16 +53,21 @@ class CommentViewSet(ModelViewSet):
     queryset = Comment.objects.all()
     permission_classes = (IsAuthenticated,)
 
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+        send_user_email(
+            subject='Your task got a new comment!',
+            message=f'The task \"{serializer.validated_data.get("task").title}\"'
+                    f' got a new comment :\n {serializer.data.get("text")}',
+            from_email=settings.EMAIL_HOST_USER,
+            recipient_list=[self.request.user.email]
+        )
+
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save(user=request.user)
+        self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
-        task = Task.objects.get(pk=serializer.data['task'])
-        send_user_email(
-            subject='Your task got a new comment!',
-            message=f'The task \"{task.title}\" got a new comment :\n {serializer.data["text"]}',
-            from_email=settings.EMAIL_HOST_USER,
-            recipient_list=[request.user.email]
-        )
+
         return Response(serializer.data, status=201, headers=headers)
