@@ -3,6 +3,6 @@ from apps.tasks.views import TaskViewSet, CommentViewSet
 
 
 router = DefaultRouter(trailing_slash=False)
-router.register('tasks', TaskViewSet)
+router.register(r'task', TaskViewSet, basename='task')
 router.register(r'comments', CommentViewSet, basename='comments')
 urlpatterns = router.urls
