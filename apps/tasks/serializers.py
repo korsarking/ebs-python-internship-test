@@ -1,20 +1,28 @@
 from django.conf import settings
 
 from rest_framework import serializers
-from rest_framework.decorators import action
+from rest_framework.pagination import PageNumberPagination
 
 from apps.common.helpers import send_user_email
 from apps.tasks.models import Task, Comment
 
 
 class TaskSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = Task
-        fields = "__all__"
-        extra_kwargs = {
-            "user": {"read_only": True},
-            "assigned_to": {"read_only": True}
-        }
+        fields = '__all__'
+
+        read_only_fields = [
+            'id',
+            'created_by',
+            'user',
+            'assigned_to'
+        ]
+        write_only_fields = [
+            'id',
+            'assigned_to',
+        ]
 
     def update(self, instance, validated_data):
         if validated_data["status"] == Task.Status.COMPLETED and instance.status != Task.Status.COMPLETED:
@@ -38,3 +46,8 @@ class TaskCommentSerializer(serializers.ModelSerializer):
             "user": {"read_only": True}
         }
 
+
+class StandardResultsSetPagination(PageNumberPagination):
+    page_size = 50
+    page_size_query_param = 'page_size'
+    max_page_size = 500
