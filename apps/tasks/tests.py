@@ -11,7 +11,7 @@ from apps.users.models import User
 fake = Faker()
 
 
-class TasksTest(TestCase):
+class TaskTestCase(TestCase):
 
     def setUp(self) -> None:
         self.client = APIClient()
@@ -21,7 +21,7 @@ class TasksTest(TestCase):
         self.task = Task.objects.create(title=fake.word(), description=fake.text(),
                                         assigned_to=self.user, user=self.user)
 
-    def task_created_test(self):
+    def test_create_task(self):
         data = {
             "title": fake.word(),
             "description": fake.text(),
@@ -32,21 +32,21 @@ class TasksTest(TestCase):
 
         self.assertEqual(201, response.status_code)
 
-    def list_tasks_test(self):
+    def test_list_tasks(self):
         Task.objects.create(title=fake.word(), assigned_to=self.user, user=self.user)
 
         response = self.client.get(reverse('tasks-list'))
 
         self.assertEqual(200, response.status_code)
 
-    def list_tasks_by_id_test(self):
+    def test_list_tasks_by_id(self):
         task = Task.objects.create(title=fake.word(), assigned_to=self.user, user=self.user)
 
         response = self.client.get(reverse('tasks-detail', kwargs={'pk': task.id}))
 
         self.assertEqual(200, response.status_code)
 
-    def completed_tasks_test(self):
+    def test_completed_task(self):
         Task.objects.create(title=fake.word(), status=Task.Status.COMPLETED,
                             assigned_to=self.user, user=self.user)
         Task.objects.create(title=fake.word(), status=Task.Status.IN_WORK,
@@ -57,7 +57,7 @@ class TasksTest(TestCase):
 
         self.assertEqual(200, response.status_code)
 
-    def assign_task_test(self):
+    def test_assign_task(self):
         task = Task.objects.create(title=fake.word(), assigned_to=self.user,
                                    user=self.user)
         other_user = User.objects.create(email=fake.email())
@@ -68,25 +68,18 @@ class TasksTest(TestCase):
             "status": Task.Status
         }
 
-        response = self.client.patch(reverse('tasks-detail', kwargs={'pk': task.id}), data)
+        response = self.client.put(reverse('tasks-detail', kwargs={'pk': task.id}), data)
 
         self.assertEqual(200, response.status_code)
 
-    def complete_task_test(self):
-        task = Task.objects.create(title=fake.word(), assigned_to=self.user, user=self.user)
-
-        response = self.client.post(reverse('tasks-complete', kwargs={'pk': task.id}))
-
-        self.assertEqual(200, response.status_code)
-
-    def remove_task_test(self):
+    def test_remove_task(self):
         task = Task.objects.create(title=fake.word(), assigned_to=self.user, user=self.user)
 
         response = self.client.delete(reverse('tasks-detail', kwargs={'pk': task.id}))
 
         self.assertEqual(204, response.status_code)
 
-    def search_task_test(self):
+    def test_search_task(self):
         Task.objects.create(title=fake.word(), assigned_to=self.user, user=self.user)
 
         base_url = reverse('tasks-list')
@@ -95,7 +88,7 @@ class TasksTest(TestCase):
         self.assertEqual(200, response.status_code)
 
 
-class CommentsTest(TestCase):
+class CommentTestCase(TestCase):
     def setUp(self) -> None:
         self.client = APIClient()
         self.user = User.objects.create(email=fake.email, password=fake.password)
@@ -112,7 +105,7 @@ class CommentsTest(TestCase):
 
         self.assertEqual(201, response.status_code)
 
-    def test_list_comment(self):
+    def test_list_comments(self):
         comment = Comment.objects.create(task_id=self.task.id, user=self.user, text=fake.text())
 
         base_url = reverse('comments-list')
