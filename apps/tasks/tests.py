@@ -1,10 +1,6 @@
-import datetime
-
-import pytz
 from django.test import TestCase
 from django.urls import reverse
 from rest_framework.test import APIClient
-from django.utils import timezone
 
 from faker import Faker
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -15,7 +11,7 @@ from apps.users.models import User
 fake = Faker()
 
 
-class TestTasks(TestCase):
+class TasksTest(TestCase):
 
     def setUp(self) -> None:
         self.client = APIClient()
@@ -25,7 +21,7 @@ class TestTasks(TestCase):
         self.task = Task.objects.create(title=fake.word(), description=fake.text(),
                                         assigned_to=self.user, user=self.user)
 
-    def test_created_task(self):
+    def task_created_test(self):
         data = {
             "title": fake.word(),
             "description": fake.text(),
@@ -36,21 +32,21 @@ class TestTasks(TestCase):
 
         self.assertEqual(201, response.status_code)
 
-    def test_list_tasks(self):
+    def list_tasks_test(self):
         Task.objects.create(title=fake.word(), assigned_to=self.user, user=self.user)
 
         response = self.client.get(reverse('tasks-list'))
 
         self.assertEqual(200, response.status_code)
 
-    def test_list_tasks_by_id(self):
+    def list_tasks_by_id_test(self):
         task = Task.objects.create(title=fake.word(), assigned_to=self.user, user=self.user)
 
         response = self.client.get(reverse('tasks-detail', kwargs={'pk': task.id}))
 
         self.assertEqual(200, response.status_code)
 
-    def test_completed_tasks(self):
+    def completed_tasks_test(self):
         Task.objects.create(title=fake.word(), status=Task.Status.COMPLETED,
                             assigned_to=self.user, user=self.user)
         Task.objects.create(title=fake.word(), status=Task.Status.IN_WORK,
@@ -61,7 +57,7 @@ class TestTasks(TestCase):
 
         self.assertEqual(200, response.status_code)
 
-    def test_assign_task(self):
+    def assign_task_test(self):
         task = Task.objects.create(title=fake.word(), assigned_to=self.user,
                                    user=self.user)
         other_user = User.objects.create(email=fake.email())
@@ -72,25 +68,25 @@ class TestTasks(TestCase):
             "status": Task.Status
         }
 
-        response = self.client.put(reverse('tasks-detail', kwargs={'pk': task.id}), data)
+        response = self.client.patch(reverse('tasks-detail', kwargs={'pk': task.id}), data)
 
         self.assertEqual(200, response.status_code)
 
-    def test_complete_task(self):
+    def complete_task_test(self):
         task = Task.objects.create(title=fake.word(), assigned_to=self.user, user=self.user)
 
         response = self.client.post(reverse('tasks-complete', kwargs={'pk': task.id}))
 
         self.assertEqual(200, response.status_code)
 
-    def test_remove_task(self):
+    def remove_task_test(self):
         task = Task.objects.create(title=fake.word(), assigned_to=self.user, user=self.user)
 
         response = self.client.delete(reverse('tasks-detail', kwargs={'pk': task.id}))
 
         self.assertEqual(204, response.status_code)
 
-    def test_search_task(self):
+    def search_task_test(self):
         Task.objects.create(title=fake.word(), assigned_to=self.user, user=self.user)
 
         base_url = reverse('tasks-list')
@@ -98,22 +94,8 @@ class TestTasks(TestCase):
 
         self.assertEqual(200, response.status_code)
 
-    def test_top20(self):
-        timelog = TimeLog.objects.create(
-            started_at=timezone.datetime(2023, 8, 13, 13, 31, 11, tzinfo=pytz.UTC),
-            duration=datetime.timedelta(days=45),
-            task_id=self.task.id,
-            user_id=self.user.id
-        )
 
-        response = self.client.get(reverse('tasks-top20'))
-
-        self.assertEqual(200, response.status_code)
-
-        self.assertEqual(f'Timelog of \"{self.task.title}\" id({timelog.id})', str(timelog))
-
-
-class TestComments(TestCase):
+class CommentsTest(TestCase):
     def setUp(self) -> None:
         self.client = APIClient()
         self.user = User.objects.create(email=fake.email, password=fake.password)

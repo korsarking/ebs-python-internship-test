@@ -12,13 +12,10 @@ class TaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
         fields = '__all__'
-
-        read_only_fields = [
-            'id',
-            'created_by',
-            'user',
-            'assigned_to'
-        ]
+        extra_kwargs = {
+            "user": {"read_only": True},
+            "assigned_to": {"read_only": True}
+        }
         write_only_fields = [
             'id',
             'assigned_to',
@@ -26,7 +23,7 @@ class TaskSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         if validated_data["status"] == Task.Status.COMPLETED and instance.status != Task.Status.COMPLETED:
-            comments = Comment.objects.filter(task=instance)
+            comments = instance.task_of_comment.all()
             for comment in comments:
                 send_user_email(
                     subject="Your task, that was commented is completed!",

@@ -41,18 +41,19 @@ class TaskViewSet(ModelViewSet):
         return Response(serializer.data)
 
     @swagger_auto_schema(responses={204: ""}, request=None)
-    @action(detail=True, methods=['PUT'], url_path=r"reassign/(?P<assigned_to>\d+)",
+    @action(detail=True, methods=['PATCH'], url_path=r"reassign/(?P<assigned_to>\d+)",
             serializer_class=None)
     def assign(self, request, pk, assigned_to):
         instance = self.get_object()
+        instance.status = Task.Status.ASSIGNED
         instance.assigned_to = get_object_or_404(User, pk=assigned_to)
-        instance.save(update_fields=["assigned_to"])
+        instance.save(update_fields=["assigned_to", "status"])
 
         send_user_email(
             subject="You have ben assigned a new task!",
             message=f"You have ben assigned a new task!\n The new task is \"{instance.title}\".",
             from_email=settings.EMAIL_HOST_USER,
-            recipient_list=[request.user.email]
+            recipient_list=[instance.assigned_to.email]
         )
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -72,5 +73,5 @@ class CommentViewSet(ModelViewSet):
             message=f'The task \"{serializer.validated_data.get("task").title}\"'
                     f' got a new comment :\n {serializer.data.get("text")}',
             from_email=settings.EMAIL_HOST_USER,
-            recipient_list=[self.request.user.email]
+            recipient_list=[serializer.validated_data.get("task").user.email]
         )

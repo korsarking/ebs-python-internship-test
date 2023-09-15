@@ -18,8 +18,8 @@ class Task(BaseModel):
 
 
 class Comment(BaseModel):
-    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name="task_for_comment")
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="commented_task")
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name="task_of_comment")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="users_comment")
     text = models.CharField(max_length=255)
 
     class Meta:
