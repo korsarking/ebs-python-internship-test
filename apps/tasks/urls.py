@@ -18,8 +18,4 @@ router.register(
     basename="tasks"
 )
 
-urlpatterns = [
-    path("tasks/<int:id>/assign/<int:owner>/", TaskViewSet, name="tasks-assign")
-]
-
-urlpatterns += router.urls
+urlpatterns = router.urls

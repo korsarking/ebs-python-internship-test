@@ -54,7 +54,6 @@ INSTALLED_APPS = [
     # Local apps
     "apps.common",
     "apps.users",
-    "apps.blog",
     "apps.tasks"
 ]
 

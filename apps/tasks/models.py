@@ -9,7 +9,6 @@ class Task(BaseModel):
     class Status(models.TextChoices):
         IN_PROGRESS = "in_progress"
         COMPLETED = "completed"
-        ASSIGNED = "assigned"
 
     title = models.CharField(max_length=255)
     description = models.CharField(max_length=255, blank=True)

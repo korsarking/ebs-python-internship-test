@@ -1,16 +1,13 @@
-from django.core import mail
 from django.conf import settings
+from django.core import mail
 from django.urls import reverse
-
 from faker import Faker
-
 from rest_framework.status import HTTP_200_OK
 from rest_framework.status import HTTP_201_CREATED
 from rest_framework.status import HTTP_204_NO_CONTENT
 from rest_framework.test import APITestCase
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from apps.common.helpers import send_user_email
 from apps.tasks.models import Comment
 from apps.tasks.models import Task
 from apps.users.models import User
@@ -41,48 +38,26 @@ class TaskTestCase(APITestCase):
         }
 
         response = self.client.post(reverse("tasks-list"), data)
-        self.assertEqual(HTTP_201_CREATED, response.status_code)
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-    def test_list_tasks(self):
+    def test_get_task_list(self):
         response = self.client.get(reverse("tasks-list"))
-        self.assertEqual(HTTP_200_OK, response.status_code)
+        self.assertEqual(response.status_code, HTTP_200_OK)
 
-    def test_list_tasks_by_id(self):
+    def test_get_task_by_id(self):
         response = self.client.get(reverse("tasks-detail", kwargs={"pk": self.task.id}))
-        self.assertEqual(HTTP_200_OK, response.status_code)
+        self.assertEqual(response.status_code, HTTP_200_OK)
 
-    def test_completed_task(self):
-        response = self.client.get(reverse("tasks-list") + "?status=completed")
-        self.assertEqual(HTTP_200_OK, response.status_code)
-
-    @patch("apps.common.helpers.send_mail")
-    def test_send_mail_emulation(self, mock_send_mail):
-        mock_send_mail.return_value = True
-
-        send_user_email(
-            "test subject",
-            "test message text",
-            "user@gmail.com",
-            ["user1@gmail.com"]
-        )
-
-        mock_send_mail.assert_called_once_with(
-            subject="test subject",
-            message="test message text",
-            from_email="user@gmail.com",
-            recipient_list=["user1@gmail.com"]
-        )
+    def test_filter_by_status(self):
+        response = self.client.get(reverse("tasks-list"), data={"status": "completed"})
+        self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_assign_task(self):
         other_owner = User.objects.create(email=fake.email())
-        data = {
-            "status": Task.Status.ASSIGNED,
-            "title": fake.word()
-        }
+        data = {"owner": other_owner.pk}
 
-        url = reverse("tasks-assign", kwargs={"pk": self.task.id, "owner": other_owner.pk})
-        response = self.client.patch(url, data)
-        self.assertEqual(HTTP_204_NO_CONTENT, response.status_code)
+        response = self.client.patch(reverse("tasks-detail", kwargs={"pk": self.task.id}), data)
+        self.assertEqual(response.status_code, HTTP_200_OK)
 
         self.task.refresh_from_db()
 
@@ -98,11 +73,11 @@ class TaskTestCase(APITestCase):
 
     def test_remove_task(self):
         response = self.client.delete(reverse("tasks-detail", kwargs={"pk": self.task.id}))
-        self.assertEqual(HTTP_204_NO_CONTENT, response.status_code)
+        self.assertEqual(response.status_code, HTTP_204_NO_CONTENT)
 
     def test_search_task(self):
-        response = self.client.get(reverse("tasks-list") + "?search=found")
-        self.assertEqual(HTTP_200_OK, response.status_code)
+        response = self.client.get(reverse("tasks-list"), data={"search": "found"})
+        self.assertEqual(response.status_code, HTTP_200_OK)
 
 
 class CommentTestCase(APITestCase):
@@ -129,42 +104,12 @@ class CommentTestCase(APITestCase):
 
         response = self.client.post(reverse("comments-list"), data)
 
-        self.assertEqual(HTTP_201_CREATED, response.status_code)
+        self.assertEqual(response.status_code, HTTP_201_CREATED)
 
     def test_list_comments(self):
         comment = Comment.objects.create(task_id=self.task.id, owner=self.user, text=fake.text())
 
-        response = self.client.get(reverse("comments-list") + f"?task={self.task.id}")
+        response = self.client.get(reverse("comments-list"), data={"task": self.task.id})
 
-        self.assertEqual(HTTP_200_OK, response.status_code)
+        self.assertEqual(response.status_code, HTTP_200_OK)
         self.assertEqual(self.task.title, comment.task.title)
-
-    def test_send_email_on_comment(self):
-        comment = Comment.objects.create(
-            owner=self.task.owner,
-            task=self.task,
-            text=fake.text()
-        )
-
-        url = reverse("tasks-detail", kwargs={"pk": self.task.id})
-        validated_data = {"status": Task.Status.COMPLETED}
-        response = self.client.patch(url, validated_data)
-
-        self.assertEqual(HTTP_200_OK, response.status_code)
-        self.task.refresh_from_db()
-        self.assertEqual(self.task.status, Task.Status.COMPLETED)
-
-        with patch("apps.common.helpers.send_mail") as mock_send_user_email:
-            send_user_email(
-                subject="Your task, that was commented is completed!",
-                message=f"You have just executed a task!\n The completed task is {self.task.title}.",
-                from_email=settings.EMAIL_HOST_USER,
-                recipient_list=[comment.owner.email]
-            )
-
-            mock_send_user_email.assert_called_once_with(
-                subject="Your task, that was commented is completed!",
-                message=f"You have just executed a task!\n The completed task is {self.task.title}.",
-                from_email=settings.EMAIL_HOST_USER,
-                recipient_list=[comment.owner.email]
-            )

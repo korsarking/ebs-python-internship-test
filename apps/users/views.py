@@ -8,16 +8,14 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.viewsets import GenericViewSet
 
-from apps.users.serializers import ListUsersSerializer
-from apps.users.serializers import RegisterUsersSerializer
+from apps.users.serializers import UserListSerializer
+from apps.users.serializers import UserRegisterSerializer
 
 User = get_user_model()
 
 
 class UserViewSet(ListModelMixin, GenericViewSet):
     queryset = User.objects.all()
-    serializer_class = ListUsersSerializer
-    permission_classes = (IsAuthenticated,)
     search_fields = ["first_name"]
     ordering = ["id"]
 
@@ -33,9 +31,9 @@ class UserViewSet(ListModelMixin, GenericViewSet):
     def get_serializer_class(self):
         match self.action:
             case "register":
-                return RegisterUsersSerializer
+                return UserRegisterSerializer
             case "list":
-                return ListUsersSerializer
+                return UserListSerializer
 
     @action(detail=False, methods=["POST"])
     def register(self, request):

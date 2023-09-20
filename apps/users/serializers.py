@@ -5,7 +5,7 @@ from rest_framework import serializers
 User = get_user_model()
 
 
-class ListUsersSerializer(serializers.ModelSerializer):
+class UserListSerializer(serializers.ModelSerializer):
     full_name = serializers.SerializerMethodField()
 
     class Meta:
@@ -17,10 +17,7 @@ class ListUsersSerializer(serializers.ModelSerializer):
         return f"{obj.first_name} {obj.last_name}"
 
 
-class RegisterUsersSerializer(serializers.ModelSerializer):
-    token = serializers.SerializerMethodField("get_auth_token")
-    password = serializers.CharField(write_only=True)
-
+class UserRegisterSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = (

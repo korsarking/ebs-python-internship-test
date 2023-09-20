@@ -2,7 +2,6 @@ from django.conf import settings
 
 from rest_framework import serializers
 
-from apps.common.helpers import send_user_email
 from apps.tasks.models import Comment
 from apps.tasks.models import Task
 
@@ -45,8 +44,7 @@ class TaskAssignSerializer(serializers.ModelSerializer):
         )
 
 
-class TaskCommentSerializer(serializers.ModelSerializer):
-
+class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
         fields = "__all__"
