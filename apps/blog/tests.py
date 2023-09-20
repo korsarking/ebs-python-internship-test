@@ -1,5 +1,5 @@
 from django.contrib.auth.models import User
-from django.test import TestCase
+from rest_framework.test import APITestCase
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
@@ -8,7 +8,7 @@ from rest_framework.test import APIClient
 # Create your tests here.
 
 
-class BlogTests(TestCase):
+class BlogTests(APITestCase):
     fixtures = ["users", "blogs", "categories"]
 
     def setUp(self) -> None:
@@ -27,7 +27,7 @@ class BlogTests(TestCase):
         self.assertEqual(len(response.data), 1)
 
 
-class CategoryTests(TestCase):
+class CategoryTests(APITestCase):
     fixtures = ["users", "blogs", "categories"]
 
     def setUp(self) -> None:
