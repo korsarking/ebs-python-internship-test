@@ -18,6 +18,7 @@ class UserViewSet(ListModelMixin, GenericViewSet):
     queryset = User.objects.all()
     serializer_class = ListUsersSerializer
     permission_classes = (IsAuthenticated,)
+    search_fields = ["first_name"]
     ordering = ["id"]
 
     def get_permissions(self):

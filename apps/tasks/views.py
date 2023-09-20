@@ -35,20 +35,19 @@ class TaskViewSet(ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
 
-    @swagger_auto_schema(responses={204: ""}, request=None)
-    @action(detail=True, methods=["PATCH"], url_path=r"assign/(?P<assigned_to>\d+)")
-    def assign(self, request, pk, assigned_to):
+    @swagger_auto_schema(responses={HTTP_204_NO_CONTENT: ""}, request=None)
+    @action(detail=True, methods=["PATCH"], url_path=r"assign/(?P<owner>\d+)")
+    def assign(self, request, pk, owner):
         instance = self.get_object()
         instance.status = Task.Status.ASSIGNED
-        instance.assigned_to = get_object_or_404(User, pk=assigned_to)
-        instance.owner = instance.assigned_to
-        instance.save(update_fields=["assigned_to", "status", "owner"])
+        instance.owner = get_object_or_404(User, pk=owner)
+        instance.save(update_fields=["owner", "status"])
 
         send_user_email(
             subject="You have been assigned to a new task!",
             message=f"You have been assigned to a new task!\n The new task is \"{instance.title}\".",
             from_email=settings.EMAIL_HOST_USER,
-            recipient_list=[instance.assigned_to.email]
+            recipient_list=[instance.owner.email]
         )
         return Response(status=HTTP_204_NO_CONTENT)
 

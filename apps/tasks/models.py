@@ -14,7 +14,6 @@ class Task(BaseModel):
     title = models.CharField(max_length=255)
     description = models.CharField(max_length=255, blank=True)
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name="tasks")
-    assigned_to = models.ForeignKey(User, on_delete=models.CASCADE, related_name="assigned_tasks", null=True)
     status = models.CharField(max_length=30, choices=Status.choices, default=Status.IN_PROGRESS)
 
 

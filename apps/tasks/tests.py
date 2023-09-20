@@ -29,7 +29,6 @@ class TaskTestCase(APITestCase):
         self.task = Task.objects.create(
             title=fake.word(),
             description=fake.text(),
-            assigned_to=self.user,
             owner=self.user,
             status=Task.Status.IN_PROGRESS
         )
@@ -81,13 +80,13 @@ class TaskTestCase(APITestCase):
             "title": fake.word()
         }
 
-        url = reverse("tasks-assign", kwargs={"pk": self.task.id, "assigned_to": other_owner.pk})
+        url = reverse("tasks-assign", kwargs={"pk": self.task.id, "owner": other_owner.pk})
         response = self.client.patch(url, data)
         self.assertEqual(HTTP_204_NO_CONTENT, response.status_code)
 
         self.task.refresh_from_db()
 
-        self.assertEqual(self.task.assigned_to.pk, other_owner.pk)
+        self.assertEqual(self.task.owner.pk, other_owner.pk)
 
         self.assertEqual(len(mail.outbox), 1)
         sent_email = mail.outbox[0]
@@ -119,7 +118,6 @@ class CommentTestCase(APITestCase):
         self.task = Task.objects.create(
             title=fake.word(),
             description=fake.text(),
-            assigned_to=self.user,
             owner=self.user
         )
 

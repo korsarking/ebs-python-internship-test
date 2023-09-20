@@ -11,10 +11,7 @@ class TaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
         fields = "__all__"
-        read_only_fields = (
-            "owner",
-            "assigned_to"
-        )
+        read_only_fields = ["owner"]
 
     def update(self, instance, validated_data):
         if validated_data["status"] == Task.Status.COMPLETED and instance.status != Task.Status.COMPLETED:
@@ -41,8 +38,9 @@ class TaskAssignSerializer(serializers.ModelSerializer):
         model = Task
         fields = "__all__"
         read_only_fields = (
+            "title",
+            "status",
             "owner",
-            "assigned_to",
             "description"
         )
 
@@ -52,6 +50,4 @@ class TaskCommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
         fields = "__all__"
-        extra_kwargs = {"owner": {"read_only": True},
-                        "assigned_to": {"read_only": True}
-                        }
+        extra_kwargs = {"owner": {"read_only": True}}
