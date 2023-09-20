@@ -9,19 +9,7 @@ from apps.users.models import User
 faker = Faker()
 
 
-class TestUsersCase(APITestCase):
-
-    def setUp(self) -> None:
-        full_name = faker.name()
-        self.user = User.objects.create(
-            first_name=full_name.split()[0],
-            last_name=full_name.split()[1],
-            email=faker.email(),
-            password=make_password("StrongPassword"),
-        )
-
-        self.client.force_authenticate(user=self.user)
-
+class UserTestCase(APITestCase):
     def test_register_user(self):
         data = {
             "first_name": faker.first_name(),
@@ -30,7 +18,7 @@ class TestUsersCase(APITestCase):
             "password": faker.password(),
         }
 
-        response = self.client.post(reverse("user_register"), data=data)
+        response = self.client.post(reverse("users-register"), data=data)
         self.assertEqual(HTTP_200_OK, response.status_code)
 
         user = User.objects.get(email=data["email"])

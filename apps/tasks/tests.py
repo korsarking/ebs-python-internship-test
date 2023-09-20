@@ -12,8 +12,6 @@ from apps.tasks.models import Comment
 from apps.tasks.models import Task
 from apps.users.models import User
 
-from unittest.mock import patch
-
 fake = Faker()
 
 
@@ -70,6 +68,27 @@ class TaskTestCase(APITestCase):
         self.assertIn("You have been assigned to a new task!", sent_email.body)
         self.assertEqual(sent_email.from_email, settings.EMAIL_HOST_USER)
         self.assertEqual(sent_email.to, [other_owner.email])
+
+    def test_complete_task(self):
+        Comment.objects.create(
+            text=fake.word(),
+            task=self.task,
+            owner=self.user,
+        )
+
+        self.task.status = Task.Status.IN_PROGRESS
+        self.task.save()
+
+        response = self.client.patch(
+            reverse(
+                "tasks-detail",
+                kwargs={"pk": self.task.pk}
+            ),
+            data={"status": Task.Status.COMPLETED}
+        )
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.task.refresh_from_db()
+        self.assertEqual(self.task.status, Task.Status.COMPLETED)
 
     def test_remove_task(self):
         response = self.client.delete(reverse("tasks-detail", kwargs={"pk": self.task.id}))

@@ -22,9 +22,9 @@ class UserViewSet(ListModelMixin, GenericViewSet):
     def get_permissions(self):
         match self.action:
             case "register":
-                self.permission_classes = [AllowAny, ]
+                self.permission_classes = [AllowAny]
             case _:
-                self.permission_classes = [IsAuthenticated, ]
+                self.permission_classes = [IsAuthenticated]
 
         return super(UserViewSet, self).get_permissions()
 
@@ -39,13 +39,11 @@ class UserViewSet(ListModelMixin, GenericViewSet):
     def register(self, request):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-
         validated_data = serializer.validated_data
 
         password = validated_data.pop("password")
 
-        user = serializer.save(**validated_data, is_superuser=True, is_staff=True)
-
+        user = serializer.save(**validated_data)
         user.set_password(password)
         user.save()
 

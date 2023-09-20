@@ -7,6 +7,7 @@ from rest_framework.routers import DefaultRouter
 from apps.users.views import UserViewSet
 
 router = DefaultRouter(trailing_slash=False)
+
 router.register(
     r"users",
     UserViewSet,
@@ -15,12 +16,12 @@ router.register(
 
 urlpatterns = [
     path(
-        r"users/login",
+        r"users/token",
         TokenObtainPairView.as_view(),
         name="token_obtain_pair"
     ),
     path(
-        r"users/token-refresh",
+        r"users/token/refresh",
         TokenRefreshView.as_view(),
         name="token_refresh"
     ),

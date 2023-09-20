@@ -5,7 +5,6 @@ from apps.common.models import BaseModel
 
 
 class Task(BaseModel):
-
     class Status(models.TextChoices):
         IN_PROGRESS = "in_progress"
         COMPLETED = "completed"
