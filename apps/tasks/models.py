@@ -5,22 +5,23 @@ from apps.common.models import BaseModel
 
 
 class Task(BaseModel):
+
     class Status(models.TextChoices):
-        IN_WORK = "In work"
-        COMPLETED = "Completed"
-        ASSIGNED = "Assigned"
+        IN_PROGRESS = "in_progress"
+        COMPLETED = "completed"
+        ASSIGNED = "assigned"
 
     title = models.CharField(max_length=255)
     description = models.CharField(max_length=255, blank=True)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, related_name="tasks")
-    assigned_to = models.ForeignKey(User, on_delete=models.CASCADE, related_name='assigned_tasks', null=True)
-    status = models.CharField(max_length=30, choices=Status.choices, default=Status.IN_WORK)
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name="tasks")
+    assigned_to = models.ForeignKey(User, on_delete=models.CASCADE, related_name="assigned_tasks", null=True)
+    status = models.CharField(max_length=30, choices=Status.choices, default=Status.IN_PROGRESS)
 
 
 class Comment(BaseModel):
     task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name="comments")
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="comments")
-    text = models.CharField(max_length=255)
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name="comments")
+    text = models.TextField()
 
     class Meta:
-        ordering = ['-id']
+        ordering = ["-id"]

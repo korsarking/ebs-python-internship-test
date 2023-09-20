@@ -1,15 +1,16 @@
 from django.contrib.auth import get_user_model
+
 from rest_framework import serializers
 
 User = get_user_model()
 
 
 class ListUsersSerializer(serializers.ModelSerializer):
-    full_name = serializers.SerializerMethodField("get_full_name")
+    full_name = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        exclude = ("password",)
+        fields = ("id", "full_name")
 
     @staticmethod
     def get_full_name(obj):
