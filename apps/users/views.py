@@ -1,39 +1,49 @@
 from django.contrib.auth import get_user_model
-from drf_util.decorators import serialize_decorator
-from rest_framework.generics import GenericAPIView
-from rest_framework.mixins import ListModelMixin
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework.response import Response
-from rest_framework.viewsets import GenericViewSet
-from rest_framework_simplejwt.tokens import RefreshToken
 
-from apps.users.serializers import RegisterUsersSerializer, ListUsersSerializer
+from rest_framework.decorators import action
+from rest_framework.mixins import ListModelMixin
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.viewsets import GenericViewSet
+
+from apps.users.serializers import UserListSerializer
+from apps.users.serializers import UserRegisterSerializer
 
 User = get_user_model()
 
 
-class RegisterUserView(GenericAPIView):
-    serializer_class = RegisterUsersSerializer
+class UserViewSet(ListModelMixin, GenericViewSet):
     queryset = User.objects.all()
+    search_fields = ["first_name"]
+    ordering = ["id"]
 
-    permission_classes = (AllowAny,)
-    authentication_classes = ()
+    def get_permissions(self):
+        match self.action:
+            case "register":
+                self.permission_classes = [AllowAny]
+            case _:
+                self.permission_classes = [IsAuthenticated]
 
-    @serialize_decorator(serializer_class)
-    def post(self, request):
-        validated_data = request.serializer.validated_data
+        return super(UserViewSet, self).get_permissions()
 
-        # Get password from validated data
+    def get_serializer_class(self):
+        match self.action:
+            case "register":
+                return UserRegisterSerializer
+            case "list":
+                return UserListSerializer
+
+    @action(detail=False, methods=["POST"])
+    def register(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
+
         password = validated_data.pop("password")
 
-        # Create user
-        user = User.objects.create(
-            **validated_data,
-            is_superuser=True,
-            is_staff=True,
-        )
-
-        # Set password
+        user = serializer.save(**validated_data)
         user.set_password(password)
         user.save()
 
@@ -43,9 +53,3 @@ class RegisterUserView(GenericAPIView):
             "refresh": str(refresh_token),
             "access": str(refresh_token.access_token)
         })
-
-
-class ListUserViewSet(ListModelMixin, GenericViewSet):
-    queryset = User.objects.all()
-    serializer_class = ListUsersSerializer
-    permission_classes = (IsAuthenticated,)

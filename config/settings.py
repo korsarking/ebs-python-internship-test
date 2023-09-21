@@ -10,10 +10,15 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.2/ref/settings/
 """
 import os
+import dj_email_url
+from environs import Env
 from datetime import timedelta
 from pathlib import Path
 
 from django.utils.translation import gettext_lazy as _
+
+env = Env(eager=False)
+env.read_env()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -22,10 +27,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-$(zi(3y@43nr)a*3t#+au-uzp)li($)ya8u*h)#uk8)$0o4x2$"
+SECRET_KEY = env.str("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = env.bool("DEBUG", default=False)
 
 ALLOWED_HOSTS = []
 
@@ -49,7 +54,6 @@ INSTALLED_APPS = [
     # Local apps
     "apps.common",
     "apps.users",
-    "apps.blog",
     "apps.tasks"
 ]
 
@@ -108,10 +112,14 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
-    'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
+    'DEFAULT_FILTER_BACKENDS': ["django_filters.rest_framework.DjangoFilterBackend",
+                                "rest_framework.filters.SearchFilter",
+                                "rest_framework.filters.OrderingFilter"],
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
     "DEFAULT_RENDERER_CLASSES": ("rest_framework.renderers.JSONRenderer",),
     "EXCEPTION_HANDLER": "apps.common.exceptions.custom_exception_handler",
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "PAGE_SIZE": 12
 }
 
 
@@ -122,7 +130,7 @@ SWAGGER_SETTINGS = {
 }
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=90),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
 }
 FIXTURE_DIRS = ("fixtures/",)
@@ -185,6 +193,15 @@ USE_TZ = True
 STATIC_URL = "/static/"
 STATIC_ROOT = os.path.join(BASE_DIR, "static")
 
+email = env.dj_email_url("EMAIL_URL", default="smtp://")
+EMAIL_HOST = email["EMAIL_HOST"]
+EMAIL_PORT = email["EMAIL_PORT"]
+EMAIL_HOST_PASSWORD = email["EMAIL_HOST_PASSWORD"]
+EMAIL_HOST_USER = email["EMAIL_HOST_USER"]
+EMAIL_USE_TLS = email["EMAIL_USE_TLS"]
+EMAIL_BACKEND = email["EMAIL_BACKEND"]
+DEFAULT_FROM_EMAIL = email.get("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER)
+
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
@@ -226,3 +243,5 @@ LOGGING = {
         },
     },
 }
+
+env.seal()

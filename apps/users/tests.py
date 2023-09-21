@@ -1,28 +1,42 @@
-from django.contrib.auth.models import User
-from django.test import TestCase
+from django.contrib.auth.hashers import make_password
+from faker import Faker
 from rest_framework.reverse import reverse
-from rest_framework.test import APIClient
+from rest_framework.status import HTTP_200_OK
+from rest_framework.test import APITestCase
+
+from apps.users.models import User
+
+faker = Faker()
 
 
-# Create your tests here.
+class UserTestCase(APITestCase):
+    def test_register_user(self):
+        data = {
+            "first_name": faker.first_name(),
+            "last_name": faker.last_name(),
+            "email": faker.email(),
+            "password": faker.password(),
+        }
 
+        response = self.client.post(reverse("users-register"), data=data)
+        self.assertEqual(HTTP_200_OK, response.status_code)
 
-class TestUsers(TestCase):
-    fixtures = ["users"]
+        user = User.objects.get(email=data["email"])
 
-    def setUp(self) -> None:
-        self.client = APIClient()
-        # check data in fixture json file
-        self.test_user1 = User.objects.get(email="user1@email.com")
+        self.assertEqual(user.email, data["email"])
+        self.assertTrue(user.is_active)
 
-    def test_register(self):
-        response = self.client.post(
-            reverse("token_register"),
-            {
-                "first_name": "firstname2",
-                "last_name": "lastname2",
-                "username": "username2",
-                "password": "testpwd2",
-            },
+    def test_get_user(self):
+        user = User.objects.create(
+            first_name=faker.first_name(),
+            last_name=faker.last_name(),
+            email=faker.email(),
+            password=make_password("StrongPassword"),
         )
-        self.assertEqual(response.status_code, 200)
+
+        self.client.force_authenticate(user=user)
+
+        response = self.client.get(reverse("users-list"))
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        self.assertEqual(response.data.get("count"), User.objects.count())
+        self.assertContains(response, f"{user.first_name} {user.last_name}")
