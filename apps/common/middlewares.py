@@ -8,10 +8,6 @@ from django.utils.translation import gettext as _
 
 logger = logging.getLogger(__name__)
 
-
-# Create your middleware here.
-
-
 class ApiMiddleware(MiddlewareMixin):
     @staticmethod
     def process_request(request):

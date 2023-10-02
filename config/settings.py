@@ -20,21 +20,13 @@ from django.utils.translation import gettext_lazy as _
 env = Env(eager=False)
 env.read_env()
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = env.str("SECRET_KEY")
 
-# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env.bool("DEBUG", default=False)
 
 ALLOWED_HOSTS = []
-
-# Application definition
 
 INSTALLED_APPS = [
     # Default Django apps
@@ -50,7 +42,6 @@ INSTALLED_APPS = [
     "rest_framework.authtoken",
     "corsheaders",
     "drf_yasg",
-    "rest_framework_swagger",
     # Local apps
     "apps.common",
     "apps.users",
@@ -77,7 +68,7 @@ ROOT_URLCONF = "config.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": ["templates/"],
+        "DIRS": [],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -117,7 +108,6 @@ REST_FRAMEWORK = {
                                 "rest_framework.filters.OrderingFilter"],
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
     "DEFAULT_RENDERER_CLASSES": ("rest_framework.renderers.JSONRenderer",),
-    "EXCEPTION_HANDLER": "apps.common.exceptions.custom_exception_handler",
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 12
 }
@@ -130,7 +120,7 @@ SWAGGER_SETTINGS = {
 }
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=90),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=500),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
 }
 FIXTURE_DIRS = ("fixtures/",)
@@ -187,11 +177,11 @@ USE_L10N = True
 
 USE_TZ = True
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/3.2/howto/static-files/
-
 STATIC_URL = "/static/"
 STATIC_ROOT = os.path.join(BASE_DIR, "static")
+
+MEDIA_URL = "/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
 email = env.dj_email_url("EMAIL_URL", default="smtp://")
 EMAIL_HOST = email["EMAIL_HOST"]
@@ -202,15 +192,11 @@ EMAIL_USE_TLS = email["EMAIL_USE_TLS"]
 EMAIL_BACKEND = email["EMAIL_BACKEND"]
 DEFAULT_FROM_EMAIL = email.get("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER)
 
-MEDIA_URL = "/media/"
-MEDIA_ROOT = os.path.join(BASE_DIR, "media")
-
 DATE_FORMAT = "%Y-%m-%d %H:%m"
 
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 
-# Default primary key field type
-# https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
+CACHE_TTL = 60
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -222,10 +208,16 @@ LOGGING = {
     "version": 1,
     "disable_existing_loggers": True,
     "formatters": {"standard": {"format": "%(asctime)s [%(levelname)s]- %(message)s"}},
+    "filters": {
+        "require_debug_true": {
+            "()": "django.utils.log.RequireDebugTrue",
+        }
+    },
     "handlers": {
         "console": {
             "level": DEBUG_LEVEL,
             "class": "logging.StreamHandler",
+            "filters": ["require_debug_true"],
             "formatter": "standard",
         }
     },
@@ -241,7 +233,33 @@ LOGGING = {
             "level": DEBUG_LEVEL,
             "propagate": True,
         },
+        "django.db.backends": {
+            "level": "DEBUG",
+            "handlers": ["console"],
+        }
     },
 }
+
+# LOGGING = {
+#     "version": 1,
+#     "filters": {
+#         "require_debug_true": {
+#             "()": "django.utils.log.RequireDebugTrue",
+#         }
+#     },
+#     "handlers": {
+#         "console": {
+#             "level": "DEBUG",
+#             "filters": ["require_debug_true"],
+#             "class": "logging.StreamHandler",
+#         }
+#     },
+#     "loggers": {
+#         "django.db.backends": {
+#             "level": "DEBUG",
+#             "handlers": ["console"],
+#         }
+#     },
+# }
 
 env.seal()
