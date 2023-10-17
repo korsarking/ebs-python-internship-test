@@ -20,7 +20,7 @@ from apps.tasks.serializers import (
     TimelogCreateSerializer,
     TimelogListSerializer,
     TimerSerializer,
-    TimelogByMonthSerializer
+    TimelogByMonthSerializer,
 )
 
 from config.settings import CACHE_TTL
@@ -37,9 +37,9 @@ class TaskViewSet(ModelViewSet):
         queryset = super().get_queryset()
         match self.action:
             case "top_month_duration":
-                return Task.objects.total_duration()
+                return Task.objects.total_duration().select_related("owner")
             case _:
-                return queryset
+                return queryset.select_related("owner")
 
     def get_serializer_class(self):
         match self.action:
@@ -73,7 +73,7 @@ class TaskViewSet(ModelViewSet):
 
 
 class CommentViewSet(ModelViewSet):
-    queryset = Comment.objects.all()
+    queryset = Comment.objects.select_related("owner").all()
     permission_classes = (IsAuthenticated,)
     filterset_fields = ["task"]
     search_fields = ["text"]

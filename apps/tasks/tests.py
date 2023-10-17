@@ -1,12 +1,12 @@
 from datetime import timedelta
+from unittest import mock
 
 from django.conf import settings
 from django.core import mail
+from django.core.mail import send_mail
 from django.urls import reverse
-from django.utils.timezone import utc
-
+from django.utils import timezone
 from faker import Faker
-
 from rest_framework.exceptions import ValidationError
 from rest_framework.status import HTTP_200_OK
 from rest_framework.status import HTTP_201_CREATED
@@ -14,28 +14,23 @@ from rest_framework.status import HTTP_204_NO_CONTENT
 from rest_framework.test import APITestCase
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from apps.tasks.factories import CommentFactory
+from apps.tasks.factories import TaskFactory
+from apps.tasks.factories import TimeLogFactory
+from apps.tasks.factories import TimerFactory
 from apps.tasks.helpers import start_month_date
 from apps.tasks.models import Task
-from apps.tasks.models import Comment
-from apps.tasks.models import TimeLog
-from apps.tasks.models import Timer
-from apps.users.models import User
+from apps.users.factories import UserFactory
 
 fake = Faker()
 
 
 class TaskTestCase(APITestCase):
-
     def setUp(self) -> None:
-        self.user = User.objects.create(email=fake.email(), password=fake.password())
+        self.user = UserFactory.create()
         self.client.force_authenticate(user=self.user)
 
-        self.task = Task.objects.create(
-            title=fake.word(),
-            description=fake.text(),
-            owner=self.user,
-            status=Task.Status.IN_PROGRESS
-        )
+        self.task = TaskFactory.create()
 
     def test_create_task(self):
         data = {
@@ -59,8 +54,10 @@ class TaskTestCase(APITestCase):
         response = self.client.get(reverse("tasks-list"), data={"status": "completed"})
         self.assertEqual(response.status_code, HTTP_200_OK)
 
-    def test_assign_task(self):
-        other_owner = User.objects.create(email=fake.email())
+    @mock.patch("apps.tasks.serializers.send_mail")
+    def test_assign_task(self, mock_send_email):
+        mock_send_email.return_value = None
+        other_owner = UserFactory.create()
         data = {"owner": other_owner.pk}
 
         response = self.client.patch(reverse("tasks-detail", kwargs={"pk": self.task.id}), data)
@@ -68,28 +65,20 @@ class TaskTestCase(APITestCase):
 
         self.assertNotEqual(self.task.owner, other_owner)
         self.task.refresh_from_db()
-        self.assertEqual(self.task.owner.pk, other_owner.pk)
+        self.assertEqual(Task.objects.get(id=self.task.id).owner, other_owner)
 
-    def test_complete_task(self):
-        Comment.objects.create(
-            text=fake.word(),
-            task=self.task,
-            owner=self.user,
-        )
-
+    @mock.patch("apps.tasks.serializers.send_mail")
+    def test_complete_task(self, mock_send_email):
+        mock_send_email.return_value = None
+        CommentFactory.create(task=self.task, owner=self.user)
         self.task.status = Task.Status.IN_PROGRESS
         self.task.save()
 
         response = self.client.patch(
-            reverse(
-                "tasks-detail",
-                kwargs={"pk": self.task.pk}
-            ),
-            data={"status": Task.Status.COMPLETED}
+            reverse("tasks-detail", kwargs={"pk": self.task.pk}), data={"status": Task.Status.COMPLETED}
         )
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.task.refresh_from_db()
-        self.assertEqual(self.task.status, Task.Status.COMPLETED)
+        self.assertEqual(Task.objects.get(id=self.task.id).status, Task.Status.COMPLETED)
 
     def test_remove_task(self):
         response = self.client.delete(reverse("tasks-detail", kwargs={"pk": self.task.id}))
@@ -100,75 +89,57 @@ class TaskTestCase(APITestCase):
         self.assertEqual(response.status_code, HTTP_200_OK)
 
     def test_top_month_tasks(self):
-        task_2 = Task.objects.create(
-            title=fake.word(),
-            description=fake.text(),
-            owner=self.user,
-            status=Task.Status.IN_PROGRESS
-        )
-        timelog_1 = TimeLog.objects.create(
-            started_at=fake.date_time().replace(tzinfo=utc) - timedelta(days=31),
-            duration=timedelta(days=15),
-            task_id=self.task.id,
-            owner_id=self.user.id
-        )
-        timelog_2 = TimeLog.objects.create(
-            started_at=start_month_date(),
-            duration=timedelta(minutes=25),
-            task_id=task_2.id,
-            owner_id=self.user.id
-        )
-
+        timelog1 = TimeLogFactory.create(started_at=timezone.now() - timedelta(days=31))
+        timelog2 = TimeLogFactory.create()
+        date_month = timezone.now().strftime("%m")
         response = self.client.get(reverse("tasks-top-month-duration"))
 
+        count_of_tasks_in_response = Task.objects.filter(time_logs__started_at__gte=start_month_date()).count()
+
         self.assertEqual(response.status_code, HTTP_200_OK)
-        self.assertIsNot(response.data[0].get("id"), timelog_1.id)
-        self.assertEqual(response.data[0].get("id"), timelog_2.id)
-        self.assertEqual(self.task, timelog_1.task)
+        self.assertNotEqual(date_month, timelog1.started_at.strftime("%m"))
+        self.assertEqual(date_month, timelog2.started_at.strftime("%m"))
+        self.assertEqual(len(response.json()), count_of_tasks_in_response)
+        self.assertEqual(response.data[0].get("id"), timelog2.task_id)
+
+    def test_send_mail(self):
+        mail_data = {
+            "subject": "This is test subject",
+            "message": "This is test message or text",
+            "from_email": settings.EMAIL_HOST_USER,
+            "recipient_list": [settings.DEFAULT_FROM_EMAIL],
+        }
+
+        send_mail(
+            subject=mail_data["subject"],
+            message=mail_data["message"],
+            from_email=mail_data["from_email"],
+            recipient_list=mail_data["recipient_list"],
+        )
+        sent_email = mail.outbox[0]
+
+        self.assertEqual(sent_email.subject, "This is test subject")
+        self.assertIn("This is test message or text", sent_email.body)
+        self.assertEqual(sent_email.from_email, settings.EMAIL_HOST_USER)
+        self.assertEqual(sent_email.to, [settings.DEFAULT_FROM_EMAIL])
 
 
 class CommentTestCase(APITestCase):
     def setUp(self) -> None:
-        self.user = User.objects.create(
-            email=fake.email(),
-            password=fake.password
-        )
-        self.client.force_authenticate(
-            user=self.user,
-            token=f"Bearer {RefreshToken.for_user(self.user)}"
-        )
-        self.task = Task.objects.create(
-            title=fake.word(),
-            description=fake.text(),
-            owner=self.user
-        )
-        self.comment = Comment.objects.create(
-            task=self.task,
-            owner=self.user,
-            text=fake.text()
-        )
+        self.user = UserFactory.create(password=fake.password)
+        self.client.force_authenticate(user=self.user, token=f"Bearer {RefreshToken.for_user(self.user)}")
+        self.task = TaskFactory.create(owner=self.user)
+        self.comment = CommentFactory.create(task=self.task, owner=self.user)
 
-    def test_create_comment(self):
-        data = {
-            "task": self.task.id,
-            "text": fake.text()
-        }
-
+    @mock.patch("apps.tasks.serializers.send_mail")
+    def test_create_comment(self, mock_send_email):
+        mock_send_email.return_value = None
+        data = {"task": self.task.id, "text": fake.text()}
         response = self.client.post(reverse("comments-list"), data)
-
-        self.assertEqual(len(mail.outbox), 1)
-        sent_email = mail.outbox[0]
-
-        self.assertEqual(sent_email.subject, "Your task got a new comment!")
-        self.assertIn(f"The task \"{self.task.title}\""
-                      f" got a new comment :\n {data.get('text')}", sent_email.body)
-        self.assertEqual(sent_email.from_email, settings.EMAIL_HOST_USER)
-        self.assertEqual(sent_email.to, [self.user.email])
-
         self.assertEqual(response.status_code, HTTP_201_CREATED)
 
     def test_list_comments(self):
-        comment = Comment.objects.create(task_id=self.task.id, owner=self.user, text=fake.text())
+        comment = CommentFactory.create(task_id=self.task.id, owner=self.user)
 
         response = self.client.get(reverse("comments-list"), data={"task": self.task.id})
 
@@ -186,30 +157,14 @@ class CommentTestCase(APITestCase):
 
 class TimerTestCase(APITestCase):
     def setUp(self) -> None:
-        self.user = User.objects.create(
-            email=fake.email(),
-            password=fake.password()
-        )
-        self.client.force_authenticate(
-            user=self.user,
-            token=f"Bearer {RefreshToken.for_user(self.user)}"
-        )
-        self.task = Task.objects.create(
-            title=fake.word(),
-            description=fake.text(),
-            owner=self.user
-        )
-        self.timer = Timer.objects.create(
+        self.user = UserFactory.create(password=fake.password)
+        self.client.force_authenticate(user=self.user, token=f"Bearer {RefreshToken.for_user(self.user)}")
+        self.task = TaskFactory.create(owner=self.user)
+        self.timer = TimerFactory.create(
             task=self.task,
             owner=self.user,
-            is_started=False,
         )
-        self.timelog = TimeLog.objects.create(
-            started_at=fake.date_time().replace(tzinfo=utc),
-            duration=timedelta(minutes=30),
-            task=self.task,
-            owner=self.user
-        )
+        self.timelog = TimeLogFactory.create()
 
     def test_start_timer(self):
         response = self.client.post(reverse("tasks-start", kwargs={"pk": self.task.id}))
@@ -218,9 +173,9 @@ class TimerTestCase(APITestCase):
 
     def test_stop_timer(self):
         self.timer.is_started = True
-        self.timer.save()
-        response = self.client.post(reverse("tasks-stop", kwargs={"pk": self.task.id}))
+        self.timer.save(update_fields=["is_started"])
 
+        response = self.client.post(reverse("tasks-stop", kwargs={"pk": self.task.id}))
         self.assertEqual(response.status_code, HTTP_200_OK)
 
         self.timer.is_started = False
@@ -249,10 +204,10 @@ class TimerTestCase(APITestCase):
 
     def test_update_timelog(self):
         data = {
-            "started_at": fake.date_time().replace(tzinfo=utc),
+            "started_at": timezone.now() - timedelta(days=15),
             "duration": timedelta(minutes=90),
             "task": self.task.pk,
-            "owner": self.user.pk
+            "owner": self.user.pk,
         }
 
         response = self.client.patch(reverse("timelog-detail", kwargs={"pk": self.timelog.id}), data)

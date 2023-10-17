@@ -49,7 +49,4 @@ class UserViewSet(ListModelMixin, GenericViewSet):
 
         refresh_token = RefreshToken().for_user(request.user)
 
-        return Response({
-            "refresh": str(refresh_token),
-            "access": str(refresh_token.access_token)
-        })
+        return Response({"refresh": str(refresh_token), "access": str(refresh_token.access_token)})

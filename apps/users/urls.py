@@ -8,23 +8,11 @@ from apps.users.views import UserViewSet
 
 router = DefaultRouter(trailing_slash=False)
 
-router.register(
-    r"users",
-    UserViewSet,
-    basename="users"
-)
+router.register(r"users", UserViewSet, basename="users")
 
 urlpatterns = [
-    path(
-        r"users/token",
-        TokenObtainPairView.as_view(),
-        name="token_obtain_pair"
-    ),
-    path(
-        r"users/token/refresh",
-        TokenRefreshView.as_view(),
-        name="token_refresh"
-    ),
+    path(r"users/token", TokenObtainPairView.as_view(), name="token_obtain_pair"),
+    path(r"users/token/refresh", TokenRefreshView.as_view(), name="token_refresh"),
 ]
 
 urlpatterns += router.urls

@@ -16,8 +16,8 @@ class Task(BaseModel):
 
     title = models.CharField(max_length=255)
     description = models.CharField(max_length=255, blank=True)
-    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name="tasks")
     status = models.CharField(max_length=30, choices=Status.choices, default=Status.IN_PROGRESS)
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name="tasks")
 
     objects = LastMonthTaskManager()
 
@@ -25,17 +25,16 @@ class Task(BaseModel):
         db_table = "tasks"
 
 
-
 class Comment(BaseModel):
+    text = models.TextField()
     task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name="comments")
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name="comments")
-    text = models.TextField()
 
     class Meta:
-        db_table = "task_comments"
+        db_table = "comments"
 
 
-class TimeLog(models.Model):
+class TimeLog(BaseModel):
     started_at = models.DateTimeField(default=timezone.now)
     duration = models.DurationField(null=True)
     task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name="time_logs")
@@ -44,11 +43,11 @@ class TimeLog(models.Model):
     objects = TaskWithTotalTimeManager()
 
     class Meta:
-        db_table = "time_records"
+        db_table = "time_logs"
 
 
-class Timer(models.Model):
-    started_at = models.DateTimeField(auto_now_add=True)
+class Timer(BaseModel):
+    started_at = models.DateTimeField(default=timezone.now)
     is_started = models.BooleanField(default=False)
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name="timers")
     task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name="timers")
@@ -71,11 +70,6 @@ class Timer(models.Model):
             self.started_at = timezone.localtime(self.started_at)
             self.save(update_fields=["is_started", "started_at"])
 
-            TimeLog.objects.create(
-                owner=self.owner,
-                task=self.task,
-                duration=duration,
-                started_at=self.started_at
-            )
+            TimeLog.objects.create(owner=self.owner, task=self.task, duration=duration, started_at=self.started_at)
         else:
             raise ValidationError({"detail": f"Task id:{self.id} has no ongoing timer."})

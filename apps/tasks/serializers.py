@@ -1,4 +1,5 @@
-from datetime import datetime, timedelta
+from datetime import datetime
+from datetime import timedelta
 
 from django.conf import settings
 from django.core.mail import send_mail
@@ -32,15 +33,15 @@ class TaskSerializer(serializers.ModelSerializer):
                     subject="Your task, that was commented is completed!",
                     message=f"You have just executed a task!\n The completed task is {instance.title}.",
                     from_email=settings.EMAIL_HOST_USER,
-                    recipient_list=[comment.owner.email]
+                    recipient_list=[comment.owner.email],
                 )
 
         if old_owner != new_owner:
             send_mail(
                 subject="You have been assigned to a new task!",
-                message=f"You have been assigned to a new task!\n The new task is \"{instance.title}\".",
+                message=f'You have been assigned to a new task!\n The new task is "{instance.title}".',
                 from_email=settings.EMAIL_HOST_USER,
-                recipient_list=[instance.owner.email]
+                recipient_list=[instance.owner.email],
             )
 
         return instance
@@ -53,10 +54,7 @@ class TaskListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
         fields = "__all__"
-        extra_kwargs = {
-            "created_at": {"required": False},
-            "updated_at": {"required": False}
-        }
+        extra_kwargs = {"created_at": {"required": False}, "updated_at": {"required": False}}
 
 
 class CommentSerializer(serializers.ModelSerializer):
@@ -71,9 +69,9 @@ class CommentSerializer(serializers.ModelSerializer):
         send_mail(
             subject="Your task got a new comment!",
             message=f"The task \"{validated_data.get('task').title}\""
-                    f" got a new comment :\n {self.data.get('text')}",
+            f" got a new comment :\n {self.data.get('text')}",
             from_email=settings.EMAIL_HOST_USER,
-            recipient_list=[validated_data.get("task").owner.email]
+            recipient_list=[validated_data.get("task").owner.email],
         )
 
         return instance
@@ -117,9 +115,7 @@ class TimelogCreateSerializer(serializers.ModelSerializer):
             task=validated_data["task"],
             owner=self.context["request"].user,
             duration=timedelta(minutes=validated_data["duration_minutes"]),
-            started_at=datetime.combine(
-                validated_data["date_field"], datetime.min.time()
-            ).replace(tzinfo=utc)
+            started_at=datetime.combine(validated_data["date_field"], datetime.min.time()).replace(tzinfo=utc),
         )
 
         return timelog
