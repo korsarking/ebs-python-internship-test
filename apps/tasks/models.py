@@ -1,8 +1,6 @@
 from django.utils import timezone
 from django.db import models
 
-from rest_framework.exceptions import ValidationError
-
 from apps.tasks.managers import TaskWithTotalTimeManager
 from apps.tasks.managers import LastMonthTaskManager
 from apps.common.models import BaseModel
@@ -62,14 +60,11 @@ class Timer(BaseModel):
             self.save(update_fields=["is_started", "started_at"])
 
     def stop(self):
-        if self.is_started:
-            duration = timezone.now() - self.started_at
+        duration = timezone.now() - self.started_at
 
-            self.is_started = False
-            self.duration = duration
-            self.started_at = timezone.localtime(self.started_at)
-            self.save(update_fields=["is_started", "started_at"])
+        self.is_started = False
+        self.duration = duration
+        self.started_at = timezone.localtime(self.started_at)
+        self.save(update_fields=["is_started", "started_at"])
 
-            TimeLog.objects.create(owner=self.owner, task=self.task, duration=duration, started_at=self.started_at)
-        else:
-            raise ValidationError({"detail": f"Task id:{self.id} has no ongoing timer."})
+        TimeLog.objects.create(owner=self.owner, task=self.task, duration=duration, started_at=self.started_at)

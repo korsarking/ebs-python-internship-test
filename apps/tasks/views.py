@@ -3,6 +3,7 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
@@ -60,7 +61,10 @@ class TaskViewSet(ModelViewSet):
     @action(methods=["POST"], detail=True)
     def stop(self, request, pk=None, *args, **kwargs):
         instance = get_object_or_404(Timer.objects.all(), owner=self.request.user, task_id=pk)
-        instance.stop()
+        if instance.is_started:
+            instance.stop()
+        else:
+            raise ValidationError({"detail": f"Task id:{instance.id} has no ongoing timer."})
         return Response(TimelogSerializer(instance).data)
 
     @method_decorator(cache_page(CACHE_TTL))
