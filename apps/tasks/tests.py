@@ -7,7 +7,6 @@ from django.core.mail import send_mail
 from django.urls import reverse
 from django.utils import timezone
 from faker import Faker
-from rest_framework.exceptions import ValidationError
 from rest_framework.status import HTTP_200_OK
 from rest_framework.status import HTTP_201_CREATED
 from rest_framework.status import HTTP_204_NO_CONTENT
@@ -178,9 +177,13 @@ class TimerTestCase(APITestCase):
         response = self.client.post(reverse("tasks-stop", kwargs={"pk": self.task.id}))
         self.assertEqual(response.status_code, HTTP_200_OK)
 
+    def test_stop_timer_with_no_ongoing_timer(self):
         self.timer.is_started = False
-        with self.assertRaises(ValidationError):
-            self.timer.stop()
+        self.timer.save()
+
+        response = self.client.post(reverse("tasks-stop", kwargs={"pk": self.task.id}))
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.data, {"detail": f"Task id:{self.timer.id} has no ongoing timer."})
 
     def test_create_timelog(self):
         data = {
