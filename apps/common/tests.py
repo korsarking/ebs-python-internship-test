@@ -4,6 +4,7 @@ from rest_framework.test import APITestCase
 
 
 class TestCommon(APITestCase):
+
     fixtures = ["users"]
 
     def setUp(self) -> None:
