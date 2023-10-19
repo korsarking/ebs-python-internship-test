@@ -5,7 +5,7 @@ CONSOLE_COLUMNS ?= `echo $$(tput cols)`
 CONSOLE_LINES ?= `echo $$(tput lines)`
 DOCKER_COMEPOSE ?= docker/docker-compose.yaml
 APP_NAME := $(word 3,$(subst _, ,$(MAKECMDGOALS)))
-VERSION ?= $(shell bash -c 'git describe --abbrev=0 --tags')
+VERSION ?= $(shell bash -c "git describe --abbrev=0 --tags")
 PYTHON_BIN ?= python
 # Image version default
 ifndef IMAGE_VERSION

@@ -17,7 +17,7 @@ class UserListSerializer(serializers.ModelSerializer):
         return f"{obj.first_name} {obj.last_name}"
 
 
-class UserRegisterSerializer(serializers.ModelSerializer):
+class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ("first_name", "last_name", "email", "password")

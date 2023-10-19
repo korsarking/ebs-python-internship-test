@@ -9,7 +9,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.viewsets import GenericViewSet
 
 from apps.users.serializers import UserListSerializer
-from apps.users.serializers import UserRegisterSerializer
+from apps.users.serializers import UserSerializer
 
 User = get_user_model()
 
@@ -31,7 +31,7 @@ class UserViewSet(ListModelMixin, GenericViewSet):
     def get_serializer_class(self):
         match self.action:
             case "register":
-                return UserRegisterSerializer
+                return UserSerializer
             case "list":
                 return UserListSerializer
 
@@ -49,7 +49,4 @@ class UserViewSet(ListModelMixin, GenericViewSet):
 
         refresh_token = RefreshToken().for_user(request.user)
 
-        return Response({
-            "refresh": str(refresh_token),
-            "access": str(refresh_token.access_token)
-        })
+        return Response({"refresh": str(refresh_token), "access": str(refresh_token.access_token)})

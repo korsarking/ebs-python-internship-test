@@ -2,8 +2,10 @@
 venv/
 *.pyc
 media/*
-db.sqlite3
+.sqlite3
 .coverage
 htmlcov/*
 .mypy_cache/
 .env
+.env.dev
+migrations/

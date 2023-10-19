@@ -1,0 +1,14 @@
+
+;;extensions to ignore
+*.log
+*.pot
+*.pyc
+*.sqlite3
+.coverage
+.gitignore
+.env.dev
+
+;;directories to ignore
+.idea/
+htmlcov
+/venv/

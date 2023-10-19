@@ -6,5 +6,8 @@ class User(AbstractUser):
     username = None
     email = models.EmailField(unique=True)
 
+    class Meta:
+        db_table = "users"
+
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []

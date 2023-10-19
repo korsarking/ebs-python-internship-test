@@ -1,6 +1,6 @@
 # Django Rest Framework - Internship tasks
 
-This repository contains a base project for internship program at EBS Integrator, each candidate for position of Junior Backend Developer must be able to develop all the tasks in the following lists. Fork it and bring it to the next level. 
+This repository contains a base project for internship program at EBS Integrator, each candidate for position of Junior Backend Developer must be able to develop all the tasks in the following lists. Fork it and bring it to the next level.
 
 ### Worflow
 
@@ -12,7 +12,7 @@ This repository contains a base project for internship program at EBS Integrator
 
 #### References
 
-1. https://www.djangoproject.com/ - official documentation of Django framework 
+1. https://www.djangoproject.com/ - official documentation of Django framework
 2. https://www.django-rest-framework.org/ - documentation of DRF, an package for Django to transform it in a full REST API framework
 3. https://restfulapi.net/ - documentation about REST APIs communication standard
 4. https://github.com/ebs-integrator/rest-api-guide - A short REST API guide used in the company
@@ -61,7 +61,7 @@ We start with some changes to understand the project code
 
 ### Milestone 2
 
-Based on previous experience, create a new project with a simple Task Management system. 
+Based on previous experience, create a new project with a simple Task Management system.
 You need to set up DB, DRF and Swagger to build a beautiful API.
 
 #### What will you learn
@@ -100,7 +100,7 @@ These screens will help you to imagine the app:
 18. Add email notification when task is assigned to me
 19. Add email notification when my task is commented
 20. Add email notification when commented task is completed
-21. Search task by title - user send search term and receive list of tasks that match 
+21. Search task by title - user send search term and receive list of tasks that match
 
 ### Milestone 3
 
@@ -117,7 +117,7 @@ User will start time when start working on task and stop it when complete the ta
 1. Start a timer for my task - user send task id and receive successful response after logging the start of task in DB
 2. Stop timer for the started task - user send task id and receive successful response after adding a time log for this task with duration of work for current date
 3. Add time log for a task on a specific date - user manually send in task id, date, duration in minutes and receive successful response of save
-4. Get a list of time logs records by task - user send task id and receive list of all time logs created for this task 
+4. Get a list of time logs records by task - user send task id and receive list of all time logs created for this task
 5. Change get list of tasks endpoint get receive the sum of the time in minutes for each task
 6. Get the logged time in last month - user send a request and receive total amount of time logged by him in last month
 7. Get top 20 tasks in last month by time - user send request and receive list of id, title, time amount of tasks with bigger logged amount of time

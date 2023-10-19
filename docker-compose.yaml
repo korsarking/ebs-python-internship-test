@@ -1,6 +1,55 @@
-version: "3"
+version: "1"
 services:
-  mongo:
-    image: drf_test
+
+  db:
+    image: "postgres:latest"
+    restart: always
     ports:
-    - "8000:8000"
+      - "5432:5432"
+    networks:
+      django_net:
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_DB: ${DB_NAME}
+    container_name: postgres
+
+  web:
+    restart: always
+    build: .
+    container_name: django
+    env_file: .env.dev
+    ports:
+     - "8000:8000"
+    networks:
+      django_net:
+    working_dir: /app/
+    depends_on:
+      - db
+
+  pghero:
+    restart: always
+    image: "ankane/pghero"
+    ports:
+      - "8080:8080"
+    networks:
+      django_net:
+    container_name: pghero
+    depends_on:
+      - db
+    environment:
+      - DATABASE_URL=postgres://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
+
+  redis:
+    restart: always
+    image: "redis:latest"
+    container_name: redis
+    ports:
+     - "6379:6379"
+    networks:
+      django_net:
+    depends_on:
+      - db
+
+networks:
+  django_net:
